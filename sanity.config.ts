@@ -23,6 +23,7 @@ import {defineConfig} from "sanity";
 import {deskTool} from "sanity/desk";
 import {visionTool} from "@sanity/vision";
 import {schemaTypes} from "./schema";
+import {vercelDeployTool} from "sanity-plugin-vercel-deploy";
 
 export default defineConfig({
     name: "juletips",
@@ -41,7 +42,7 @@ export default defineConfig({
                     }),
                 ])
         },
-    }), visionTool()],
+    }), visionTool(), vercelDeployTool()],
     schema: {
         types: schemaTypes,
     },
