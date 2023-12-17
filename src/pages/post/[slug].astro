@@ -1,43 +1,42 @@
 ---
-import type { InferGetStaticParamsType } from "astro";
-import { PortableText } from "astro-portabletext";
+import type {InferGetStaticParamsType} from "astro";
+import {PortableText} from "astro-portabletext";
 import Layout from "../../layouts/Layout.astro";
-import { formatDate } from "../../utils";
-import { urlFor } from "../../utils/image";
-import { getPost, getPosts } from "../../utils/sanity";
+import {urlFor} from "../../utils/image";
+import {getPost, getPosts} from "../../utils/sanity";
 
 export async function getStaticPaths() {
-  const posts = await getPosts();
-  return posts.map((post) => ({
-    params: { slug: post.slug.current },
-  }));
+    const posts = await getPosts();
+    return posts.map((post) => ({
+        params: {slug: post.slug.current},
+    }));
 }
 
 type Params = InferGetStaticParamsType<typeof getStaticPaths>;
-const { slug } = Astro.params as Params;
+const {slug} = Astro.params as Params;
 
 const post = await getPost(slug);
 ---
 
 <Layout title={post.title!}>
-  <section class="post">
-    {
-      post.mainImage ? (
-        <img
-          class="post__cover"
-          src={urlFor(post.mainImage).url()}
-          alt="Cover image"
-        />
-      ) : (
-        <div class="post__cover--none" />
-      )
-    }
-    <div class="post__container">
-      <h1 class="post__title">{post.title}</h1>
-      <p class="post__excerpt">{post.excerpt}</p>
-      <div class="post__content">
-        <PortableText value={post.body} />
-      </div>
-    </div>
-  </section>
+    <section class="post">
+        {
+            post.mainImage ? (
+                    <img
+                            class="post__cover"
+                            src={urlFor(post.mainImage).url()}
+                            alt="Cover image"
+                    />
+            ) : (
+                    <div class="post__cover--none"/>
+            )
+        }
+        <div class="post__container">
+            <h1 class="post__title">{post.title}</h1>
+            <p class="post__excerpt">{post.excerpt}</p>
+            <div class="post__content">
+                <PortableText value={post.body}/>
+            </div>
+        </div>
+    </section>
 </Layout>

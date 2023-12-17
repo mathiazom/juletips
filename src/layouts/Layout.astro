@@ -1,50 +1,50 @@
 ---
 // https://docs.astro.build/en/guides/view-transitions/
-import { ViewTransitions } from 'astro:transitions';
+import {ViewTransitions} from 'astro:transitions';
 
 interface Props {
-  title: string;
+    title: string;
 }
 
-const { title } = Astro.props;
+const {title} = Astro.props;
 ---
 
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
+<head>
+    <meta charset="UTF-8"/>
     <meta
-      name="viewport"
-      content="width=device-width"
+            name="viewport"
+            content="width=device-width"
     />
     <link rel="icon" type="image/svg+xml" href="/favicon/favicon.svg">
     <link rel="icon" type="image/png" href="/favicon/favicon.png">
     <meta
-      name="generator"
-      content={Astro.generator}
+            name="generator"
+            content={Astro.generator}
     />
 
     <!-- Google fonts -->
     <link
-      rel="preconnect"
-      href="https://fonts.googleapis.com"
+            rel="preconnect"
+            href="https://fonts.googleapis.com"
     />
     <link
-      rel="preconnect"
-      href="https://fonts.gstatic.com"
-      crossorigin
+            rel="preconnect"
+            href="https://fonts.gstatic.com"
+            crossorigin
     />
     <link
-      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;700&family=Inter:wght@500;700;800&family=PT+Serif:ital,wght@0,400;0,700;1,400;1,700&display=swap"
-      rel="stylesheet"
+            href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;700&family=Inter:wght@500;700;800&family=PT+Serif:ital,wght@0,400;0,700;1,400;1,700&display=swap"
+            rel="stylesheet"
     />
 
     <title>{title}</title>
-    <ViewTransitions />
-  </head>
-  <body>
-      <main>
-        <slot />
-      </main>
-  </body>
+    <ViewTransitions/>
+</head>
+<body>
+<main>
+    <slot/>
+</main>
+</body>
 </html>

@@ -1,36 +1,39 @@
 ---
-import { urlFor } from "../utils/image";
-import type { Post } from "../utils/sanity";
+import {urlFor} from "../utils/image";
+import type {Post, PostRank} from "../utils/sanity";
 
 interface Props {
-  post: Post;
-  index: number;
+    post: Post;
+    rank: PostRank;
 }
 
-const { post, index } = Astro.props;
+const {
+    post,
+    rank
+} = Astro.props;
 ---
 
 <div class="max-w-xl w-full">
-  {
-    post.mainImage && (
-      <img
-          class="w-52 max-h-80 md:w-48 md:h-auto rounded-md border-2 object-cover"
-          src={urlFor(post.mainImage).url()}
-          alt={post.title}
-      />
-    )
-  }
-  <div class="pt-4 md:text-left space-y-4">
-    <!--TODO-->
-    <!--<a href={`/post/${post.slug.current}`}>-->
-      <div class="text-3xl font-bold text-green-500">
-        {index+1}. {post.title}
-      </div>
-    <!--</a>-->
-    {post.excerpt && (
-        <div class="text-xl text-slate-700 mt-3">
-          {post.excerpt}
+    {
+        post.mainImage && (
+                    <img
+                            class="w-52 max-h-80 md:w-48 md:h-auto rounded-md border-2 object-cover"
+                            src={urlFor(post.mainImage).url()}
+                            alt={post.title}
+                    />
+        )
+    }
+    <div class="pt-4 md:text-left space-y-4">
+        <!--TODO-->
+        <!--<a href={`/post/${post.slug.current}`}>-->
+        <div class="text-3xl font-bold text-green-500">
+            {rank + 1}. {post.title}
         </div>
-    )}
-  </div>
+        <!--</a>-->
+        {post.excerpt && (
+                <div class="text-xl text-slate-700 mt-3">
+                    {post.excerpt}
+                </div>
+        )}
+    </div>
 </div>
