@@ -2,10 +2,11 @@
 import Card from "../components/Card.astro";
 import Layout from "../layouts/Layout.astro";
 import {getWishes} from "../utils/sanity";
+import {getCurrentYear} from "../utils";
 
 const wishes = await getWishes();
 
-const year = new Date().getFullYear();
+const year = getCurrentYear();
 ---
 
 <Layout title={`Julegaveønsker Mathias ${year}`}>
