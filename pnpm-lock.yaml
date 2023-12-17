@@ -32,12 +32,6 @@ dependencies:
   '@sanity/vision':
     specifier: ^3.21.3
     version: 3.21.3(@babel/runtime@7.23.6)(@codemirror/lint@6.4.2)(@codemirror/state@6.3.3)(@codemirror/theme-one-dark@6.1.2)(@lezer/common@1.1.2)(codemirror@6.0.1)(react-dom@18.2.0)(react-is@18.2.0)(react@18.2.0)(styled-components@6.1.1)
-  '@types/react':
-    specifier: ^18.2.45
-    version: 18.2.45
-  '@types/react-dom':
-    specifier: ^18.2.18
-    version: 18.2.18
   astro:
     specifier: ^3.6.4
     version: 3.6.4(typescript@5.3.3)
@@ -50,6 +44,9 @@ dependencies:
   groq:
     specifier: ^3.21.3
     version: 3.21.3
+  luxon:
+    specifier: ^3.4.4
+    version: 3.4.4
   prettier-plugin-astro:
     specifier: 0.12.0
     version: 0.12.0
@@ -76,6 +73,15 @@ devDependencies:
   '@sanity/types':
     specifier: ^3.21.3
     version: 3.21.3
+  '@types/luxon':
+    specifier: ^3.3.7
+    version: 3.3.7
+  '@types/react':
+    specifier: ^18.2.45
+    version: 18.2.45
+  '@types/react-dom':
+    specifier: ^18.2.18
+    version: 18.2.18
   '@typescript-eslint/eslint-plugin':
     specifier: ^6.14.0
     version: 6.14.0(@typescript-eslint/parser@6.14.0)(eslint@8.56.0)(typescript@5.3.3)
@@ -1905,6 +1911,10 @@ packages:
     resolution: {integrity: sha512-OvlIYQK9tNneDlS0VN54LLd5uiPCBOp7gS5Z0f1mjoJYBrtStzgmJBxONW3U6OZqdtNzZPmn9BS/7WI7BFFcFQ==}
     dev: false
 
+  /@types/luxon@3.3.7:
+    resolution: {integrity: sha512-gKc9P2d4g5uYwmy4s/MO/yOVPmvHyvzka1YH6i5dM03UrFofHSmgc0D0ymbDRStFWHusk6cwwF6nhLm/ckBbbQ==}
+    dev: true
+
   /@types/mdast@3.0.15:
     resolution: {integrity: sha512-LnwD+mUEfxWMa1QpDraczIn6k0Ee3SMicuYSSzS6ZYl2gKS09EClnJYGd8Du6rfc5r/GZEk5o1mRb8TaTj03sQ==}
     dependencies:
@@ -1958,7 +1968,6 @@ packages:
     resolution: {integrity: sha512-TJxDm6OfAX2KJWJdMEVTwWke5Sc/E/RlnPGvGfS0W7+6ocy2xhDVQVh/KvC2Uf7kACs+gDytdusDSdWfWkaNzw==}
     dependencies:
       '@types/react': 18.2.45
-    dev: false
 
   /@types/react-is@18.2.4:
     resolution: {integrity: sha512-wBc7HgmbCcrvw0fZjxbgz/xrrlZKzEqmABBMeSvpTvdm25u6KI6xdIi9pRE2G0C1Lw5ETFdcn4UbYZ4/rpqUYw==}
@@ -4866,6 +4875,11 @@ packages:
     engines: {node: '>=10'}
     dependencies:
       yallist: 4.0.0
+
+  /luxon@3.4.4:
+    resolution: {integrity: sha512-zobTr7akeGHnv7eBOXcRgMeCP6+uyYsczwmeRCauvpvaAltgNyTbLH/+VaEAPUeWBT+1GuNmz4wC/6jtQzbbVA==}
+    engines: {node: '>=12'}
+    dev: false
 
   /magic-string@0.30.5:
     resolution: {integrity: sha512-7xlpfBaQaP/T6Vh8MO/EqXSW5En6INHEvEXQiuff7Gku0PWjU3uf6w/j9o7O+SpB5fOAkrI5HeoNgwjEO0pFsA==}
