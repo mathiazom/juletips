@@ -1,4 +1,6 @@
 ---
+import { Image } from 'astro:assets';
+import juleMathias from "../images/julemathias.JPG";
 import Card from "../components/Card.astro";
 import Layout from "../layouts/Layout.astro";
 import {getLastModified, getWishes} from "../utils/sanity";
@@ -15,9 +17,9 @@ const lastModifiedTimestamp = await getLastModified();
     <div class="py-16 flex flex-col items-center justify-center">
         <header>
             <div class={"px-8 flex flex-col md:items-center"}>
-                <img alt="Mathias" loading="lazy" width="360" height="360" decoding="async" data-nimg="1"
+                <Image alt="Mathias" loading="lazy" width="360" height="360" decoding="async" data-nimg="1"
                      class="w-36 h-36 rounded-full border-4 border-red-700 object-cover bg-red-700 transition-transform duration-1000 hover:rotate-180 motion-reduce:transition-none"
-                     style="color:transparent" src="julemathias.JPG">
+                     style="color:transparent" src={juleMathias} />
                 <h1 class={"m-0 text-4xl md:text-5xl mt-6 text-red-700 font-bold"}>
                     {wishes.length} tips til årets julehandel
                 </h1>
@@ -32,9 +34,9 @@ const lastModifiedTimestamp = await getLastModified();
                         </div>
                     </>
             ))}
-            <hr class={"md:my-6 border-t-2"}/>
+            <hr class={"border-t-2"}/>
         </section>
-        <footer class="mt-4 flex flex-col items-center gap-2">
+        <footer class="mt-12 flex flex-col items-center gap-2">
             {lastModifiedTimestamp && (
                     <p class="text-gray-500">Sist oppdatert {lastModifiedTimestamp}</p>
             )}

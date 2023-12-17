@@ -23,6 +23,10 @@ import tailwind from "@astrojs/tailwind";
 
 // https://astro.build/config
 export default defineConfig({
+  image: {
+    domains: ["sanity.io"],
+    remotePatterns: [{ protocol: "https" }],
+  },
   // Hybrid+adapter is required to support embedded Sanity Studio
   output: "hybrid",
   adapter: vercel(),
