@@ -24,7 +24,7 @@ const year = new Date().getFullYear();
             {posts.map((post, index) => (
                     <>
                         <hr class="md:my-6 border-t-2"/>
-                        <Card post={post} index={index}/>
+                        <Card post={post} rank={index}/>
                     </>
             ))}
             <hr class={"md:my-6 border-t-2"}/>
