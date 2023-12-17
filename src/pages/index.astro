@@ -12,22 +12,24 @@ const lastModifiedTimestamp = await getLastModified();
 ---
 
 <Layout title={`Julegaveønsker Mathias ${year}`}>
-    <div class="px-8 py-16 flex flex-col items-center justify-center">
+    <div class="py-16 flex flex-col items-center justify-center">
         <header>
-            <div class={"flex flex-col md:items-center px-4"}>
+            <div class={"px-8 flex flex-col md:items-center"}>
                 <img alt="Mathias" loading="lazy" width="360" height="360" decoding="async" data-nimg="1"
-                     class="w-36 h-36 rounded-full border-4 border-red-700 object-cover bg-red-700"
+                     class="w-36 h-36 rounded-full border-4 border-red-700 object-cover bg-red-700 transition-transform duration-1000 hover:rotate-180 motion-reduce:transition-none"
                      style="color:transparent" src="julemathias.JPG">
                 <h1 class={"m-0 text-4xl md:text-5xl mt-6 text-red-700 font-bold"}>
                     {wishes.length} tips til årets julehandel
                 </h1>
             </div>
         </header>
-        <section class="flex flex-col w-full max-w-xl gap-2 mt-4 md:mt-2">
+        <section class="flex flex-col w-full max-w-xl gap-2 mt-8">
             {wishes.map((wish, index) => (
                     <>
-                        <hr class="md:my-6 border-t-2"/>
-                        <Card wish={wish} rank={index}/>
+                        <hr class="border-t-2"/>
+                        <div class="px-8 my-6">
+                            <Card wish={wish} rank={index}/>
+                        </div>
                     </>
             ))}
             <hr class={"md:my-6 border-t-2"}/>
