@@ -24,12 +24,11 @@ const {
         )
     }
     <div class="pt-4 md:text-left space-y-4">
-        <!--TODO-->
-        <!--<a href={`/wish/${wish.slug.current}`}>-->
-        <div class="text-3xl font-bold text-green-500">
-            {rank + 1}. {wish.title}
-        </div>
-        <!--</a>-->
+        <a href={wish.url}>
+            <div class="text-3xl font-bold text-green-500">
+                {rank + 1}. {wish.title}
+            </div>
+        </a>
         {wish.excerpt && (
                 <div class="text-xl text-slate-700 mt-3">
                     {wish.excerpt}

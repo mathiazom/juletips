@@ -24,6 +24,7 @@ export interface Wish {
     title?: string
     slug: Slug
     excerpt?: string
+    url?: string,
     mainImage?: ImageAsset
     body: PortableTextBlock[]
 }
