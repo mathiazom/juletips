@@ -1,4 +1,4 @@
 import blockContent from './blockContent'
-import post from './post'
+import wish from './wish.ts'
 
-export const schemaTypes = [post, blockContent]
+export const schemaTypes = [wish, blockContent]

@@ -36,7 +36,7 @@ export default defineConfig({
                 .title('Content')
                 .items([
                     orderableDocumentListDeskItem({
-                        type: 'post',
+                        type: 'wish',
                         S,
                         context
                     }),

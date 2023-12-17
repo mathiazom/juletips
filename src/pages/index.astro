@@ -1,9 +1,9 @@
 ---
 import Card from "../components/Card.astro";
 import Layout from "../layouts/Layout.astro";
-import {getPosts} from "../utils/sanity";
+import {getWishes} from "../utils/sanity";
 
-const posts = await getPosts();
+const wishes = await getWishes();
 
 const year = new Date().getFullYear();
 ---
@@ -16,15 +16,15 @@ const year = new Date().getFullYear();
                      class="w-36 h-36 rounded-full border-4 border-red-700 object-cover bg-red-700"
                      style="color:transparent" src="julemathias.JPG">
                 <h1 class={"m-0 text-4xl md:text-5xl mt-6 text-red-700 font-bold"}>
-                    {posts.length} tips til årets julehandel
+                    {wishes.length} tips til årets julehandel
                 </h1>
             </div>
         </header>
         <section class="flex flex-col w-full max-w-xl gap-2 mt-4 md:mt-2">
-            {posts.map((post, index) => (
+            {wishes.map((wish, index) => (
                     <>
                         <hr class="md:my-6 border-t-2"/>
-                        <Card post={post} rank={index}/>
+                        <Card wish={wish} rank={index}/>
                     </>
             ))}
             <hr class={"md:my-6 border-t-2"}/>
