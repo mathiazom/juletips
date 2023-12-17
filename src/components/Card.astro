@@ -23,7 +23,7 @@ const {
                             src={urlFor(wish.mainImage).url()}
                             width={360}
                             height={360}
-                            alt={wish.title}
+                            alt={wish.title ?? null}
                     />
         )
     }
