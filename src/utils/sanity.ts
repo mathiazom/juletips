@@ -5,7 +5,7 @@ import groq from "groq";
 
 export async function getPosts(): Promise<Post[]> {
   return await useSanityClient().fetch(
-    groq`*[_type == "post" && defined(slug.current)] | order(_createdAt desc)`
+    groq`*[_type == "post" && defined(slug.current)] | order(orderRank)`
   );
 }
 

@@ -1,4 +1,6 @@
 // Different environments use different variables
+import {orderableDocumentListDeskItem, orderRankField, orderRankOrdering} from "@sanity/orderable-document-list";
+
 const projectId =
   import.meta.env.PUBLIC_SANITY_STUDIO_PROJECT_ID! ||
   import.meta.env.PUBLIC_SANITY_PROJECT_ID!;
@@ -23,11 +25,19 @@ import { visionTool } from "@sanity/vision";
 import { schemaTypes } from "./schema";
 
 export default defineConfig({
-  name: "project-name",
-  title: "Project Name",
+  name: "juletips",
+  title: "Juletips",
   projectId,
   dataset,
-  plugins: [deskTool(), visionTool()],
+  plugins: [deskTool({
+    structure: (S, context) => {
+      return S.list()
+          .title('Content')
+          .items([
+            orderableDocumentListDeskItem({type: 'post', S, context}),
+          ])
+    },
+  }), visionTool()],
   schema: {
     types: schemaTypes,
   },
