@@ -1,5 +1,5 @@
 ---
-import { Image } from 'astro:assets';
+import {Image} from 'astro:assets';
 import {urlFor} from "../utils/image";
 import type {Wish, PostRank} from "../utils/sanity";
 import {PortableText} from "astro-portabletext";
@@ -18,13 +18,15 @@ const {
 <div class="max-w-xl w-full">
     {
         wish.mainImage && (
-                    <Image
-                            class="w-52 max-h-80 md:w-48 md:h-auto rounded-md border-2 object-cover"
-                            src={urlFor(wish.mainImage).url()}
-                            width={360}
-                            height={360}
-                            alt={wish.title ?? null}
-                    />
+                    <a href={wish.url}>
+                        <Image
+                                class="w-52 max-h-80 md:w-48 md:h-auto rounded-md border-2 object-cover"
+                                src={urlFor(wish.mainImage).url()}
+                                width={360}
+                                height={360}
+                                alt={wish.title ?? null}
+                        />
+                    </a>
         )
     }
     <div class="pt-4 md:text-left space-y-4">
