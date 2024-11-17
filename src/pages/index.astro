@@ -1,16 +1,15 @@
 ---
 import { Image } from 'astro:assets';
+import {sanityClient} from "sanity:client";
 import juleMathias from "../images/julemathias.jpg";
 import Card from "../components/Card.astro";
 import Layout from "../layouts/Layout.astro";
 import {getLastModified, getWishes} from "../utils/sanity";
 import {getCurrentYear} from "../utils";
 
-const wishes = await getWishes();
-
 const year = getCurrentYear();
-
-const lastModifiedTimestamp = await getLastModified();
+const wishes = await getWishes(sanityClient);
+const lastModifiedTimestamp = await getLastModified(sanityClient);
 ---
 
 <Layout title={`Julegaveønsker Mathias ${year}`}>
