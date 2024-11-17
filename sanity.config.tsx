@@ -24,10 +24,12 @@ import { visionTool } from '@sanity/vision';
 import { schemaTypes } from './schema';
 import { vercelDeployTool } from 'sanity-plugin-vercel-deploy';
 import { structureTool } from 'sanity/structure';
+import juleMathias from './src/images/julemathias.jpg';
 
 export default defineConfig({
   name: 'juletips',
   title: 'Juletips',
+  icon: () => <img alt={'studio'} src={juleMathias.src} />,
   projectId,
   dataset,
   plugins: [
@@ -47,6 +49,7 @@ export default defineConfig({
     visionTool(),
     vercelDeployTool(),
   ],
+  tools: (prev) => prev.filter((tool) => tool.name !== 'schedules'),
   schema: {
     types: schemaTypes,
   },
