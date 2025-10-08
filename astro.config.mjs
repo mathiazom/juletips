@@ -27,8 +27,7 @@ export default defineConfig({
     domains: ['sanity.io'],
     remotePatterns: [{ protocol: 'https' }],
   },
-  // Hybrid+adapter is required to support embedded Sanity Studio
-  output: 'hybrid',
+  output: 'static',
   adapter: vercel(),
   integrations: [
     sanity({

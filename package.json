@@ -15,15 +15,15 @@
   },
   "dependencies": {
     "@astrojs/check": "0.9.4",
-    "@astrojs/react": "^3.6.2",
-    "@astrojs/tailwind": "^5.1.2",
+    "@astrojs/react": "^4.4.0",
+    "@astrojs/tailwind": "^6.0.2",
     "@astrojs/ts-plugin": "^1.10.4",
-    "@astrojs/vercel": "^7.8.2",
+    "@astrojs/vercel": "^8.2.8",
     "@sanity/astro": "^3.1.6",
     "@sanity/image-url": "^1.1.0",
     "@sanity/orderable-document-list": "^1.2.2",
     "@sanity/vision": "^3.64.1",
-    "astro": "^4.16.13",
+    "astro": "^5.14.1",
     "astro-portabletext": "0.9.4",
     "autoprefixer": "^10.4.20",
     "groq": "^3.64.1",
@@ -54,6 +54,6 @@
     "vite": "^5.4.11"
   },
   "engines": {
-    "node": "^18.0.0"
+    "node": "^22.0.0"
   }
 }
