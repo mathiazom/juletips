@@ -45,7 +45,9 @@ const mainImageUrl = wish.mainImage && imageUrlBuilder(sanityClient).image(wish.
                 </div>
         )}
         {wish.body && (
-                <PortableText class="text-lg font-medium text-gray-500 italic" value={wish.body}/>
+                <div class="text-lg font-medium text-gray-500 italic">
+                    <PortableText value={wish.body}/>
+                </div>
         )}
     </div>
 </div>
