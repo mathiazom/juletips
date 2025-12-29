@@ -2,8 +2,8 @@ import type { PortableTextBlock } from '@portabletext/types';
 import type { ImageAsset, Slug } from '@sanity/types';
 import groq from 'groq';
 import { DateTime } from 'luxon';
-import { LocalizedDateTime } from './date.ts';
-import type { SanityClient } from 'sanity';
+import { LocalizedDateTime } from '../utils/date.ts';
+import type { SanityClient } from '@sanity/client';
 
 export async function getWishes(client: SanityClient): Promise<Wish[]> {
   return await client.fetch(

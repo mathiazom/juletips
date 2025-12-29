@@ -1,0 +1,21 @@
+services:
+  web:
+    build:
+      tags:
+        - juletips
+      context: web
+    container_name: juletips
+    restart: unless-stopped
+    env_file: web/.env
+    ports:
+      - '3000:80'
+  studio:
+    build:
+      tags:
+        - juletips-studio
+      context: studio
+    container_name: juletips-studio
+    restart: unless-stopped
+    env_file: studio/.env
+    ports:
+      - '3001:80'
