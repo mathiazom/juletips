@@ -1,10 +1,10 @@
 ---
 import { Image } from 'astro:assets';
-import {sanityClient} from "sanity:client";
+import {client as sanityClient} from "../sanity";
 import juleMathias from "../images/julemathias.jpg";
 import Card from "../components/Card.astro";
 import Layout from "../layouts/Layout.astro";
-import {getLastModified, getWishes} from "../utils/sanity";
+import {getLastModified, getWishes} from '../sanity';
 import {getCurrentYear} from "../utils";
 
 const year = getCurrentYear();

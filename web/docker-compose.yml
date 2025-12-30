@@ -1,0 +1,11 @@
+services:
+  juletips:
+    build:
+      tags:
+        - juletips
+      context: .
+    container_name: juletips
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - '3000:80'

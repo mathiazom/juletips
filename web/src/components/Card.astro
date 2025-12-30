@@ -1,7 +1,7 @@
 ---
 import {Image} from 'astro:assets';
-import { sanityClient } from 'sanity:client';
-import type {Wish, PostRank} from "../utils/sanity";
+import { client as sanityClient } from '../sanity';
+import type {Wish, PostRank} from '../sanity';
 import {PortableText} from "astro-portabletext";
 import imageUrlBuilder from "@sanity/image-url";
 
