@@ -21,4 +21,6 @@ RUN pnpm run build
 
 EXPOSE 80
 
+RUN npx serve --version
+
 CMD ["npx", "serve", "-s", "dist", "-l", "80"]
