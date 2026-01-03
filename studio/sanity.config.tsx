@@ -32,7 +32,6 @@ export default defineConfig({
       style={{objectFit: 'cover', height: '100%', width: '100%'}}
     />
   ),
-  basePath: "/admin",
   projectId,
   dataset,
   plugins: [
