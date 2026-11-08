@@ -149,7 +149,7 @@ async fn create(State(app): State<App>, multipart: Multipart) -> Res {
         place(&mut db, id, rank).map_err(internal)?;
     }
     set_image(&db, &app.site, id, None, &image)?;
-    done(&db, &app.site)
+    done(&db, &app.site, &format!("/#w{id}"))
 }
 
 async fn update(State(app): State<App>, Path(id): Path<i64>, multipart: Multipart) -> Res {
@@ -171,7 +171,8 @@ async fn update(State(app): State<App>, Path(id): Path<i64>, multipart: Multipar
     if let Some(bytes) = image {
         set_image(&db, &app.site, id, old.image.as_deref(), &bytes)?;
     }
-    done(&db, &app.site)
+    let list = if form.received { "/mottatt" } else { "/" };
+    done(&db, &app.site, &format!("{list}#w{id}"))
 }
 
 async fn move_wish(State(app): State<App>, Path((id, dir)): Path<(i64, String)>) -> Res {
@@ -183,7 +184,7 @@ async fn move_wish(State(app): State<App>, Path((id, dir)): Path<(i64, String)>)
     let mut db = app.db.lock().unwrap();
     find(&db, id)?;
     swap(&mut db, id, up).map_err(internal)?;
-    done(&db, &app.site)
+    done(&db, &app.site, &format!("/#w{id}"))
 }
 
 async fn delete(State(app): State<App>, Path(id): Path<i64>) -> Res {
@@ -192,12 +193,12 @@ async fn delete(State(app): State<App>, Path(id): Path<i64>) -> Res {
     db.execute("DELETE FROM wish WHERE id = ?1", [id])
         .map_err(internal)?;
     remove_image_file(&app.site, old.image.as_deref());
-    done(&db, &app.site)
+    done(&db, &app.site, "/")
 }
 
-fn done(db: &Connection, site: &FsPath) -> Res {
+fn done(db: &Connection, site: &FsPath, to: &str) -> Res {
     publish(db, site, true).map_err(internal)?;
-    Ok(Redirect::to("/").into_response())
+    Ok(Redirect::to(to).into_response())
 }
 
 fn not_found() -> HttpErr {

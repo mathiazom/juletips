@@ -97,6 +97,10 @@ const ADMIN_CSS: &str = "
 body { font-family: system-ui, sans-serif; max-width: 48rem; margin: 2rem auto; padding: 0 1rem; color: #1f2937; }
 table { width: 100%; border-collapse: collapse; }
 td { padding: .5rem; border-bottom: 1px solid #e5e7eb; vertical-align: middle; }
+/* Saves and moves redirect to the row's #anchor; keep it mid-screen and mark it. */
+tr { scroll-margin-top: 40vh; }
+tr:target { animation: flash 2s ease-out; }
+@keyframes flash { from { background: #fefce8; } }
 td.actions { white-space: nowrap; text-align: right; }
 /* max-width: 0 lets a table cell shrink below its content so the ellipsis kicks in. */
 td.title { width: 100%; max-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -169,7 +173,7 @@ pub fn admin_list(wishes: &[Wish], received: bool) -> Markup {
             }))
             table {
                 @for (i, wish) in wishes.iter().enumerate() {
-                    tr {
+                    tr id={ "w" (wish.id) } {
                         td {
                             @if let Some(image) = &wish.image {
                                 img.thumb src={ "/site/images/" (image) } alt="";
