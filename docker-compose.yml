@@ -10,7 +10,7 @@ services:
     ports:
       - '3001:8080'
   public:
-    image: nginx:1.31-alpine
+    image: nginx:1.31-alpine-slim
     restart: unless-stopped
     volumes:
       - site:/usr/share/nginx/html:ro
