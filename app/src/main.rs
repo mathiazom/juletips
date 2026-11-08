@@ -92,7 +92,10 @@ fn router(app: App) -> Router {
     Router::new()
         .route("/", get(|s: State<App>| list(s, false)))
         .route("/mottatt", get(|s: State<App>| list(s, true)))
-        .route("/opprett", get(|| async { html::admin_form(None) }).post(create))
+        .route(
+            "/opprett",
+            get(|| async { html::admin_form(None) }).post(create),
+        )
         // axum matches the percent-encoded path, so "ø" must be spelled %C3%B8.
         .route("/%C3%B8nske/{id}", get(edit_form).post(update))
         .route("/%C3%B8nske/{id}/move/{dir}", post(move_wish))

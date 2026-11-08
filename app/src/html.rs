@@ -144,6 +144,8 @@ fn admin_layout(title: &str, body: Markup) -> Markup {
             head {
                 meta charset="utf-8";
                 meta name="viewport" content="width=device-width";
+                link rel="icon" type="image/svg+xml" href="/site/favicon.svg";
+                link rel="icon" type="image/png" href="/site/favicon.png";
                 title { (title) " – Juletips admin" }
                 style { (ADMIN_CSS) }
             }
@@ -194,7 +196,11 @@ pub fn admin_list(wishes: &[Wish], received: bool) -> Markup {
 pub fn admin_form(wish: Option<&Wish>) -> Markup {
     let path = wish.map_or("/opprett".to_string(), |w| format!("/ønske/{}", w.id));
     let value = |f: fn(&Wish) -> Option<&str>| wish.and_then(f).unwrap_or_default().to_string();
-    let title = if wish.is_some() { "Rediger ønske" } else { "Nytt ønske" };
+    let title = if wish.is_some() {
+        "Rediger ønske"
+    } else {
+        "Nytt ønske"
+    };
     admin_layout(
         title,
         html! {
