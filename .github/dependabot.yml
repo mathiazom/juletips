@@ -1,0 +1,44 @@
+version: 2
+updates:
+  - package-ecosystem: cargo
+    directory: /app
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 2
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+        # In Cargo, 0.x minor bumps are breaking, so these get their own PRs.
+        # ponytail: hand-maintained list, drop a crate once it reaches 1.0
+        exclude-patterns: [axum, maud, rusqlite, image, tower-http, jiff]
+
+  - package-ecosystem: docker
+    directory: /app
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 2
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 2
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 2
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
