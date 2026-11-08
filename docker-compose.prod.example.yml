@@ -1,0 +1,20 @@
+services:
+  app:
+    container_name: juletips-app
+    image: ghcr.io/mathiazom/juletips:main
+    restart: unless-stopped
+    volumes:
+      - db:/data/db
+      - site:/data/site
+  public:
+    container_name: juletips-www
+    image: nginx:1.31-alpine
+    restart: unless-stopped
+    volumes:
+      - site:/usr/share/nginx/html:ro
+
+volumes:
+  db:
+    name: juletips-db-data
+  site:
+    name: juletips-site-data

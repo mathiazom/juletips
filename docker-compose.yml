@@ -1,21 +1,22 @@
+# Development: `docker compose up --build`, then admin on http://localhost:3001 and the public site on http://localhost:3000.
+# Production uses docker-compose.prod.example.yml instead.
 services:
-  web:
-    build:
-      tags:
-        - juletips
-      context: web
-    container_name: juletips
+  app:
+    build: app
     restart: unless-stopped
-    env_file: web/.env
+    volumes:
+      - db:/data/db
+      - site:/data/site
+    ports:
+      - '3001:8080'
+  public:
+    image: nginx:1.31-alpine
+    restart: unless-stopped
+    volumes:
+      - site:/usr/share/nginx/html:ro
     ports:
       - '3000:80'
-  studio:
-    build:
-      tags:
-        - juletips-studio
-      context: studio
-    container_name: juletips-studio
-    restart: unless-stopped
-    env_file: studio/.env
-    ports:
-      - '3001:80'
+
+volumes:
+  db:
+  site:
