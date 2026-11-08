@@ -23,7 +23,7 @@ use tower_http::services::ServeDir;
 const SCHEMA: &str = "
 CREATE TABLE IF NOT EXISTS wish(
   id INTEGER PRIMARY KEY, position INTEGER NOT NULL,
-  title TEXT NOT NULL, url TEXT, description TEXT, note TEXT,
+  title TEXT NOT NULL, url TEXT, subtitle TEXT, description TEXT,
   image TEXT, received INTEGER NOT NULL DEFAULT 0);
 CREATE TABLE IF NOT EXISTS site(id INTEGER PRIMARY KEY CHECK(id = 1), last_modified INTEGER);
 ";
@@ -50,8 +50,8 @@ pub struct Wish {
     pub id: i64,
     pub title: String,
     pub url: Option<String>,
+    pub subtitle: Option<String>,
     pub description: Option<String>,
-    pub note: Option<String>,
     pub image: Option<String>,
     pub received: bool,
 }
@@ -60,10 +60,9 @@ pub struct Wish {
 struct WishForm {
     title: String,
     url: Option<String>,
+    subtitle: Option<String>,
     description: Option<String>,
-    note: Option<String>,
     image: Option<Vec<u8>>,
-    remove_image: bool,
     received: bool,
 }
 
@@ -75,6 +74,7 @@ async fn main() {
 
     let db = Connection::open(&db_path).expect("open database");
     db.execute_batch(SCHEMA).expect("create schema");
+    migrate(&db).expect("migrate schema");
     publish(&db, &site, false).expect("initial publish");
 
     let app = router(App {
@@ -92,11 +92,11 @@ fn router(app: App) -> Router {
     Router::new()
         .route("/", get(|s: State<App>| list(s, false)))
         .route("/mottatt", get(|s: State<App>| list(s, true)))
-        .route("/new", get(|| async { html::admin_form(None) }))
-        .route("/wishes", post(create))
-        .route("/wishes/{id}", get(edit_form).post(update))
-        .route("/wishes/{id}/move/{dir}", post(move_wish))
-        .route("/wishes/{id}/delete", post(delete))
+        .route("/opprett", get(|| async { html::admin_form(None) }).post(create))
+        // axum matches the percent-encoded path, so "ø" must be spelled %C3%B8.
+        .route("/%C3%B8nske/{id}", get(edit_form).post(update))
+        .route("/%C3%B8nske/{id}/move/{dir}", post(move_wish))
+        .route("/%C3%B8nske/{id}/delete", post(delete))
         .nest_service("/site", ServeDir::new(&app.site))
         .layer(middleware::from_fn(same_origin_posts))
         .layer(DefaultBodyLimit::max(20 * 1024 * 1024))
@@ -129,12 +129,10 @@ async fn edit_form(State(app): State<App>, Path(id): Path<i64>) -> Res {
 async fn create(State(app): State<App>, multipart: Multipart) -> Res {
     let form = read_form(multipart).await?;
     // ponytail: resize runs on the async worker; move to spawn_blocking if uploads ever stall other requests
-    let image = form.image.as_deref().map(resize).transpose()?;
+    let image = resize(form.image.as_deref().ok_or_else(|| bad("Bilde mangler"))?)?;
     let db = app.db.lock().unwrap();
     let id = insert(&db, &form).map_err(internal)?;
-    if let Some(bytes) = image {
-        set_image(&db, &app.site, id, None, &bytes)?;
-    }
+    set_image(&db, &app.site, id, None, &image)?;
     done(&db, &app.site)
 }
 
@@ -143,17 +141,16 @@ async fn update(State(app): State<App>, Path(id): Path<i64>, multipart: Multipar
     let image = form.image.as_deref().map(resize).transpose()?;
     let db = app.db.lock().unwrap();
     let old = find(&db, id)?;
+    if image.is_none() && old.image.is_none() {
+        return Err(bad("Bilde mangler"));
+    }
     db.execute(
-        "UPDATE wish SET title = ?1, url = ?2, description = ?3, note = ?4, received = ?5 WHERE id = ?6",
-        params![form.title, form.url, form.description, form.note, form.received, id],
+        "UPDATE wish SET title = ?1, url = ?2, subtitle = ?3, description = ?4, received = ?5 WHERE id = ?6",
+        params![form.title, form.url, form.subtitle, form.description, form.received, id],
     )
     .map_err(internal)?;
     if let Some(bytes) = image {
         set_image(&db, &app.site, id, old.image.as_deref(), &bytes)?;
-    } else if form.remove_image {
-        db.execute("UPDATE wish SET image = NULL WHERE id = ?1", [id])
-            .map_err(internal)?;
-        remove_image_file(&app.site, old.image.as_deref());
     }
     done(&db, &app.site)
 }
@@ -202,9 +199,8 @@ async fn read_form(mut multipart: Multipart) -> Result<WishForm, HttpErr> {
         match name.as_str() {
             "title" => form.title = value.unwrap_or_default(),
             "url" => form.url = value,
+            "subtitle" => form.subtitle = value,
             "description" => form.description = value,
-            "note" => form.note = value,
-            "remove_image" => form.remove_image = true,
             "received" => form.received = true,
             _ => {}
         }
@@ -270,9 +266,9 @@ fn remove_image_file(site: &FsPath, name: Option<&str>) {
 
 fn insert(db: &Connection, form: &WishForm) -> rusqlite::Result<i64> {
     db.execute(
-        "INSERT INTO wish(position, title, url, description, note)
+        "INSERT INTO wish(position, title, url, subtitle, description)
          VALUES ((SELECT COALESCE(MAX(position), 0) + 1 FROM wish), ?1, ?2, ?3, ?4)",
-        params![form.title, form.url, form.description, form.note],
+        params![form.title, form.url, form.subtitle, form.description],
     )?;
     Ok(db.last_insert_rowid())
 }
@@ -305,7 +301,7 @@ fn swap(db: &mut Connection, id: i64, up: bool) -> rusqlite::Result<()> {
 
 fn find(db: &Connection, id: i64) -> Result<Wish, HttpErr> {
     db.query_row(
-        "SELECT id, title, url, description, note, image, received FROM wish WHERE id = ?1",
+        "SELECT id, title, url, subtitle, description, image, received FROM wish WHERE id = ?1",
         [id],
         to_wish,
     )
@@ -316,7 +312,7 @@ fn find(db: &Connection, id: i64) -> Result<Wish, HttpErr> {
 
 fn load(db: &Connection, received: bool) -> rusqlite::Result<Vec<Wish>> {
     let mut stmt = db.prepare(
-        "SELECT id, title, url, description, note, image, received FROM wish
+        "SELECT id, title, url, subtitle, description, image, received FROM wish
          WHERE received = ?1 ORDER BY position",
     )?;
     stmt.query_map([received], to_wish)?.collect()
@@ -327,11 +323,28 @@ fn to_wish(r: &Row) -> rusqlite::Result<Wish> {
         id: r.get(0)?,
         title: r.get(1)?,
         url: r.get(2)?,
-        description: r.get(3)?,
-        note: r.get(4)?,
+        subtitle: r.get(3)?,
+        description: r.get(4)?,
         image: r.get(5)?,
         received: r.get(6)?,
     })
+}
+
+fn migrate(db: &Connection) -> rusqlite::Result<()> {
+    let has_note: bool = db.query_row(
+        "SELECT EXISTS(SELECT 1 FROM pragma_table_info('wish') WHERE name = 'note')",
+        [],
+        |r| r.get(0),
+    )?;
+    if has_note {
+        db.execute_batch(
+            "BEGIN;
+             ALTER TABLE wish RENAME COLUMN description TO subtitle;
+             ALTER TABLE wish RENAME COLUMN note TO description;
+             COMMIT;",
+        )?;
+    }
+    Ok(())
 }
 
 /// Regenerates the public site. `bump` marks it as changed for the "Sist oppdatert" footer.

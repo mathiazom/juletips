@@ -27,8 +27,8 @@ section { display: flex; flex-direction: column; gap: .5rem; width: 100%; max-wi
 article { padding: 0 2rem; margin: 1.5rem 0; }
 article img { width: 13rem; max-height: 20rem; border-radius: .375rem; border-width: 2px; object-fit: cover; }
 article h2 { padding-top: 1rem; font-size: 1.875rem; line-height: 2.25rem; font-weight: 700; color: #22c55e; }
-.description { margin-top: 1rem; font-size: 1.25rem; line-height: 1.75rem; color: #334155; }
-.note { margin-top: 1rem; font-size: 1.125rem; line-height: 1.75rem; font-weight: 500; font-style: italic; color: #6b7280; white-space: pre-line; }
+.subtitle { margin-top: 1rem; font-size: 1.25rem; line-height: 1.75rem; color: #334155; }
+.description { margin-top: 1rem; font-size: 1.125rem; line-height: 1.75rem; font-weight: 500; font-style: italic; color: #6b7280; white-space: pre-line; }
 
 footer { margin-top: 3rem; display: flex; flex-direction: column; align-items: center; gap: .5rem; }
 .updated { color: #6b7280; }

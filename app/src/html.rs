@@ -71,11 +71,11 @@ pub fn public_page(wishes: &[Wish], last_modified: Option<i64>) -> Markup {
                                 a href=[wish.url.as_deref()] {
                                     h2 { (i + 1) ". " (wish.title) }
                                 }
+                                @if let Some(subtitle) = &wish.subtitle {
+                                    p.subtitle { (subtitle) }
+                                }
                                 @if let Some(description) = &wish.description {
                                     p.description { (description) }
-                                }
-                                @if let Some(note) = &wish.note {
-                                    p.note { (note) }
                                 }
                             }
                         }
@@ -105,7 +105,11 @@ td.actions button { min-width: 2.75rem; min-height: 2.75rem; font-size: 1.25rem;
 td.actions form + form { margin-left: .5rem; }
 img.thumb { width: 3rem; height: 3rem; object-fit: cover; border-radius: .25rem; }
 label { display: block; margin-top: 1rem; font-weight: 600; }
-input[type=text], input[type=url], textarea { width: 100%; box-sizing: border-box; padding: .4rem; font: inherit; }
+input[type=text], input[type=url], textarea { width: 100%; box-sizing: border-box; padding: .4rem; font: inherit; font-weight: normal; display: block; margin-top: .4rem; }
+.image-field { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 1rem; margin-top: .4rem; font-weight: normal; }
+/* Same size as the public page's article img. */
+img.preview { width: 13rem; max-height: 20rem; object-fit: cover; border-radius: .375rem; border: 2px solid #e5e7eb; }
+@media (min-width: 768px) { img.preview { width: 12rem; } }
 textarea { min-height: 5rem; }
 .row { display: flex; flex-wrap: wrap; gap: .5rem 1rem; align-items: center; justify-content: space-between; margin-top: 1.5rem; }
 header { display: flex; flex-wrap: wrap; gap: 1.5rem 1rem; align-items: center; justify-content: space-between; margin: 1.5rem 0 3rem; }
@@ -113,7 +117,25 @@ header h1 { margin: 0; display: flex; align-items: center; gap: .5rem; }
 img.avatar { display: block; width: 4rem; height: 4rem; border-radius: 50%; border: 3px solid #b91c1c; object-fit: cover; }
 nav { display: flex; flex-wrap: wrap; gap: .75rem 1.5rem; }
 button.danger { color: #b91c1c; }
+.req { color: #b91c1c; font-weight: normal; }
+/* Keeps the avatar painted across page loads; the rest swaps instantly. */
+@view-transition { navigation: auto; }
+img.avatar { view-transition-name: avatar; }
+::view-transition-old(root) { display: none; }
+::view-transition-new(root) { animation: none; }
 ";
+
+fn admin_header(title: &str, suffix: Option<&str>, nav: Markup) -> Markup {
+    html! {
+        header {
+            h1 {
+                img.avatar src="/site/julemathias.jpg" alt=(title);
+                @if let Some(suffix) = suffix { span aria-hidden="true" { (suffix) } }
+            }
+            nav { (nav) }
+        }
+    }
+}
 
 fn admin_layout(title: &str, body: Markup) -> Markup {
     html! {
@@ -135,19 +157,13 @@ pub fn admin_list(wishes: &[Wish], received: bool) -> Markup {
     admin_layout(
         title,
         html! {
-            header {
-                h1 {
-                    img.avatar src="/site/julemathias.jpg" alt=(title);
-                    @if received { span aria-hidden="true" { "/mottatt" } }
+            (admin_header(title, received.then_some("/mottatt"), html! {
+                @if received { a href="/" { "← Ønsker" } } @else {
+                    a href="/opprett" { "+ Nytt ønske" }
+                    a href="/mottatt" { "Mottatt" }
+                    a href="/site/index.html" { "Se offentlig side" }
                 }
-                nav {
-                    @if received { a href="/" { "← Ønsker" } } @else {
-                        a href="/new" { "+ Nytt ønske" }
-                        a href="/mottatt" { "Mottatt" }
-                        a href="/site/index.html" { "Se offentlig side" }
-                    }
-                }
-            }
+            }))
             table {
                 @for (i, wish) in wishes.iter().enumerate() {
                     tr {
@@ -156,13 +172,13 @@ pub fn admin_list(wishes: &[Wish], received: bool) -> Markup {
                                 img.thumb src={ "/site/images/" (image) } alt="";
                             }
                         }
-                        td.title title=(wish.title) { a href={ "/wishes/" (wish.id) } { (wish.title) } }
+                        td.title title=(wish.title) { a href={ "/ønske/" (wish.id) } { (wish.title) } }
                         @if !received {
                             td.actions {
-                                form.inline method="post" action={ "/wishes/" (wish.id) "/move/up" } {
+                                form.inline method="post" action={ "/ønske/" (wish.id) "/move/up" } {
                                     button title="Flytt opp" disabled[i == 0] { "↑" }
                                 }
-                                form.inline method="post" action={ "/wishes/" (wish.id) "/move/down" } {
+                                form.inline method="post" action={ "/ønske/" (wish.id) "/move/down" } {
                                     button title="Flytt ned" disabled[i + 1 == wishes.len()] { "↓" }
                                 }
                             }
@@ -176,31 +192,31 @@ pub fn admin_list(wishes: &[Wish], received: bool) -> Markup {
 }
 
 pub fn admin_form(wish: Option<&Wish>) -> Markup {
-    let action = wish.map_or("/wishes".to_string(), |w| format!("/wishes/{}", w.id));
+    let path = wish.map_or("/opprett".to_string(), |w| format!("/ønske/{}", w.id));
     let value = |f: fn(&Wish) -> Option<&str>| wish.and_then(f).unwrap_or_default().to_string();
+    let title = if wish.is_some() { "Rediger ønske" } else { "Nytt ønske" };
     admin_layout(
-        if wish.is_some() {
-            "Rediger ønske"
-        } else {
-            "Nytt ønske"
-        },
+        title,
         html! {
-            p { a href=(if wish.is_some_and(|w| w.received) { "/mottatt" } else { "/" }) { "← Tilbake" } }
-            form method="post" action=(action) enctype="multipart/form-data" {
-                label { "Tittel" input type="text" name="title" required value=(value(|w| Some(w.title.as_str()))); }
+            (admin_header(title, Some(&path), html! {
+                @if wish.is_some_and(|w| w.received) { a href="/mottatt" { "← Mottatt" } }
+                @else { a href="/" { "← Ønsker" } }
+            }))
+            form method="post" action=(path) enctype="multipart/form-data" {
+                label { "Tittel" " " span.req aria-hidden="true" { "*" } input type="text" name="title" required value=(value(|w| Some(w.title.as_str()))); }
                 label { "Lenke" input type="url" name="url" placeholder="https://" value=(value(|w| w.url.as_deref())); }
+                label { "Undertittel" input type="text" name="subtitle" value=(value(|w| w.subtitle.as_deref())); }
                 label { "Beskrivelse" textarea name="description" { (value(|w| w.description.as_deref())) } }
-                label { "Notat" textarea name="note" { (value(|w| w.note.as_deref())) } }
                 label {
-                    "Bilde"
-                    @if let Some(image) = wish.and_then(|w| w.image.as_deref()) {
-                        br;
-                        img.thumb src={ "/site/images/" (image) } alt="";
+                    "Bilde" " " span.req aria-hidden="true" { "*" }
+                    div.image-field {
+                        @if let Some(w) = wish {
+                            @if let Some(image) = &w.image {
+                                img.preview src={ "/site/images/" (image) } alt="";
+                            }
+                        }
+                        input type="file" name="image" accept="image/jpeg,image/png,image/webp" required[!wish.is_some_and(|w| w.image.is_some())];
                     }
-                    input type="file" name="image" accept="image/jpeg,image/png,image/webp";
-                }
-                @if wish.is_some_and(|w| w.image.is_some()) {
-                    label { input type="checkbox" name="remove_image"; " Fjern bilde" }
                 }
                 @if let Some(w) = wish {
                     label { input type="checkbox" name="received" checked[w.received]; " Mottatt (skjules fra offentlig side)" }
@@ -208,7 +224,7 @@ pub fn admin_form(wish: Option<&Wish>) -> Markup {
                 div.row { button type="submit" { "Lagre" } }
             }
             @if let Some(w) = wish {
-                form method="post" action={ "/wishes/" (w.id) "/delete" } {
+                form method="post" action={ "/ønske/" (w.id) "/delete" } onsubmit="return confirm('Slette ønsket? Dette kan ikke angres.')" {
                     div.row { span {} button.danger type="submit" { "Slett ønsket" } }
                 }
             }
