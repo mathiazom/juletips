@@ -194,7 +194,7 @@ pub fn admin_list(wishes: &[Wish], received: bool) -> Markup {
     )
 }
 
-/// `place` is the wish's 1-based rank and the number of open wishes; `None` hides the field.
+/// `place` is (1-based rank, highest allowed rank) among open wishes; `None` hides the field.
 pub fn admin_form(wish: Option<&Wish>, place: Option<(usize, usize)>) -> Markup {
     let path = wish.map_or("/opprett".to_string(), |w| format!("/ønske/{}", w.id));
     let value = |f: fn(&Wish) -> Option<&str>| wish.and_then(f).unwrap_or_default().to_string();

@@ -93,10 +93,7 @@ fn router(app: App) -> Router {
     Router::new()
         .route("/", get(|s: State<App>| list(s, false)))
         .route("/mottatt", get(|s: State<App>| list(s, true)))
-        .route(
-            "/opprett",
-            get(|| async { html::admin_form(None, None) }).post(create),
-        )
+        .route("/opprett", get(create_form).post(create))
         // axum matches the percent-encoded path, so "ø" must be spelled %C3%B8.
         .route("/%C3%B8nske/{id}", get(edit_form).post(update))
         .route("/%C3%B8nske/{id}/move/{dir}", post(move_wish))
@@ -125,6 +122,12 @@ async fn list(State(app): State<App>, received: bool) -> Res {
     Ok(html::admin_list(&wishes, received).into_response())
 }
 
+async fn create_form(State(app): State<App>) -> Res {
+    let db = app.db.lock().unwrap();
+    let total = load(&db, false).map_err(internal)?.len() + 1;
+    Ok(html::admin_form(None, Some((total, total))).into_response())
+}
+
 async fn edit_form(State(app): State<App>, Path(id): Path<i64>) -> Res {
     let db = app.db.lock().unwrap();
     let wish = find(&db, id)?;
@@ -140,8 +143,11 @@ async fn create(State(app): State<App>, multipart: Multipart) -> Res {
     let form = read_form(multipart).await?;
     // ponytail: resize runs on the async worker; move to spawn_blocking if uploads ever stall other requests
     let image = resize(form.image.as_deref().ok_or_else(|| bad("Bilde mangler"))?)?;
-    let db = app.db.lock().unwrap();
+    let mut db = app.db.lock().unwrap();
     let id = insert(&db, &form).map_err(internal)?;
+    if let Some(rank) = form.position {
+        place(&mut db, id, rank).map_err(internal)?;
+    }
     set_image(&db, &app.site, id, None, &image)?;
     done(&db, &app.site)
 }
