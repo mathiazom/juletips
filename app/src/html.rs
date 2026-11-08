@@ -105,7 +105,8 @@ td.actions button { min-width: 2.75rem; min-height: 2.75rem; font-size: 1.25rem;
 td.actions form + form { margin-left: .5rem; }
 img.thumb { width: 3rem; height: 3rem; object-fit: cover; border-radius: .25rem; }
 label { display: block; margin-top: 1rem; font-weight: 600; }
-input[type=text], input[type=url], textarea { width: 100%; box-sizing: border-box; padding: .4rem; font: inherit; font-weight: normal; display: block; margin-top: .4rem; }
+input[type=text], input[type=url], input[type=number], textarea { width: 100%; box-sizing: border-box; padding: .4rem; font: inherit; font-weight: normal; display: block; margin-top: .4rem; }
+input[type=number] { width: 6rem; }
 .image-field { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 1rem; margin-top: .4rem; font-weight: normal; }
 /* Same size as the public page's article img. */
 img.preview { width: 13rem; max-height: 20rem; object-fit: cover; border-radius: .375rem; border: 2px solid #e5e7eb; }
@@ -193,7 +194,8 @@ pub fn admin_list(wishes: &[Wish], received: bool) -> Markup {
     )
 }
 
-pub fn admin_form(wish: Option<&Wish>) -> Markup {
+/// `place` is the wish's 1-based rank and the number of open wishes; `None` hides the field.
+pub fn admin_form(wish: Option<&Wish>, place: Option<(usize, usize)>) -> Markup {
     let path = wish.map_or("/opprett".to_string(), |w| format!("/ønske/{}", w.id));
     let value = |f: fn(&Wish) -> Option<&str>| wish.and_then(f).unwrap_or_default().to_string();
     let title = if wish.is_some() {
@@ -223,6 +225,9 @@ pub fn admin_form(wish: Option<&Wish>) -> Markup {
                         }
                         input type="file" name="image" accept="image/jpeg,image/png,image/webp" required[!wish.is_some_and(|w| w.image.is_some())];
                     }
+                }
+                @if let Some((rank, total)) = place {
+                    label { "Plassering (1–" (total) ")" input type="number" name="position" min="1" max=(total) required value=(rank); }
                 }
                 @if let Some(w) = wish {
                     label { input type="checkbox" name="received" checked[w.received]; " Mottatt (skjules fra offentlig side)" }

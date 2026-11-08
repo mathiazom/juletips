@@ -64,6 +64,7 @@ struct WishForm {
     description: Option<String>,
     image: Option<Vec<u8>>,
     received: bool,
+    position: Option<usize>,
 }
 
 #[tokio::main]
@@ -94,7 +95,7 @@ fn router(app: App) -> Router {
         .route("/mottatt", get(|s: State<App>| list(s, true)))
         .route(
             "/opprett",
-            get(|| async { html::admin_form(None) }).post(create),
+            get(|| async { html::admin_form(None, None) }).post(create),
         )
         // axum matches the percent-encoded path, so "ø" must be spelled %C3%B8.
         .route("/%C3%B8nske/{id}", get(edit_form).post(update))
@@ -126,7 +127,13 @@ async fn list(State(app): State<App>, received: bool) -> Res {
 
 async fn edit_form(State(app): State<App>, Path(id): Path<i64>) -> Res {
     let db = app.db.lock().unwrap();
-    Ok(html::admin_form(Some(&find(&db, id)?)).into_response())
+    let wish = find(&db, id)?;
+    let open = load(&db, false).map_err(internal)?;
+    let place = open
+        .iter()
+        .position(|w| w.id == id)
+        .map(|i| (i + 1, open.len()));
+    Ok(html::admin_form(Some(&wish), place).into_response())
 }
 
 async fn create(State(app): State<App>, multipart: Multipart) -> Res {
@@ -142,7 +149,7 @@ async fn create(State(app): State<App>, multipart: Multipart) -> Res {
 async fn update(State(app): State<App>, Path(id): Path<i64>, multipart: Multipart) -> Res {
     let form = read_form(multipart).await?;
     let image = form.image.as_deref().map(resize).transpose()?;
-    let db = app.db.lock().unwrap();
+    let mut db = app.db.lock().unwrap();
     let old = find(&db, id)?;
     if image.is_none() && old.image.is_none() {
         return Err(bad("Bilde mangler"));
@@ -152,6 +159,9 @@ async fn update(State(app): State<App>, Path(id): Path<i64>, multipart: Multipar
         params![form.title, form.url, form.subtitle, form.description, form.received, id],
     )
     .map_err(internal)?;
+    if let Some(rank) = form.position.filter(|_| !form.received) {
+        place(&mut db, id, rank).map_err(internal)?;
+    }
     if let Some(bytes) = image {
         set_image(&db, &app.site, id, old.image.as_deref(), &bytes)?;
     }
@@ -205,6 +215,11 @@ async fn read_form(mut multipart: Multipart) -> Result<WishForm, HttpErr> {
             "subtitle" => form.subtitle = value,
             "description" => form.description = value,
             "received" => form.received = true,
+            "position" => {
+                form.position = value
+                    .map(|v| v.parse().map_err(|_| bad("Ugyldig plassering")))
+                    .transpose()?
+            }
             _ => {}
         }
     }
@@ -297,6 +312,23 @@ fn swap(db: &mut Connection, id: i64, up: bool) -> rusqlite::Result<()> {
         tx.execute(
             "UPDATE wish SET position = ?1 WHERE id = ?2",
             params![pos, other_id],
+        )?;
+    }
+    tx.commit()
+}
+
+/// Moves an open wish to 1-based `rank` among open wishes and renumbers them.
+fn place(db: &mut Connection, id: i64, rank: usize) -> rusqlite::Result<()> {
+    let tx = db.transaction()?;
+    let mut ids: Vec<i64> = tx
+        .prepare("SELECT id FROM wish WHERE received = 0 AND id != ?1 ORDER BY position")?
+        .query_map([id], |r| r.get(0))?
+        .collect::<Result<_, _>>()?;
+    ids.insert(rank.saturating_sub(1).min(ids.len()), id);
+    for (i, id) in ids.iter().enumerate() {
+        tx.execute(
+            "UPDATE wish SET position = ?1 WHERE id = ?2",
+            params![i as i64 + 1, id],
         )?;
     }
     tx.commit()
@@ -424,5 +456,38 @@ mod tests {
         assert!(tredje < andre, "moved-up wish should come first");
         assert!(!html.contains("<script"));
         assert!(html.contains("Sist oppdatert"));
+    }
+
+    #[test]
+    fn place_moves_wish_to_rank() {
+        let mut db = Connection::open_in_memory().unwrap();
+        db.execute_batch(SCHEMA).unwrap();
+        let ids: Vec<i64> = ["A", "B", "C", "D"]
+            .iter()
+            .map(|t| {
+                insert(
+                    &db,
+                    &WishForm {
+                        title: (*t).into(),
+                        ..Default::default()
+                    },
+                )
+                .unwrap()
+            })
+            .collect();
+        let order = |db: &Connection| -> String {
+            load(db, false)
+                .unwrap()
+                .iter()
+                .map(|w| w.title.as_str())
+                .collect()
+        };
+
+        place(&mut db, ids[3], 1).unwrap();
+        assert_eq!(order(&db), "DABC");
+        place(&mut db, ids[3], 99).unwrap();
+        assert_eq!(order(&db), "ABCD");
+        place(&mut db, ids[0], 3).unwrap();
+        assert_eq!(order(&db), "BCAD");
     }
 }
