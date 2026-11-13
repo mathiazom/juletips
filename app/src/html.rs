@@ -25,14 +25,11 @@ fn oslo() -> TimeZone {
     TimeZone::get("Europe/Oslo").expect("tzdb is bundled")
 }
 
-/// "8. november", with the year only when it isn't the current one.
-fn norwegian_date(ts: i64, now: &Zoned) -> String {
-    let Ok(ts) = Timestamp::from_second(ts) else {
-        return String::new();
-    };
-    norwegian_day(ts.to_zoned(oslo()).date(), now)
+fn oslo_date(ts: i64) -> Option<Date> {
+    Some(Timestamp::from_second(ts).ok()?.to_zoned(oslo()).date())
 }
 
+/// "8. november", with the year only when it isn't the current one.
 fn norwegian_day(d: Date, now: &Zoned) -> String {
     let month = MONTHS[d.month() as usize - 1];
     if d.year() == now.year() {
@@ -67,7 +64,8 @@ pub fn public_page(wishes: &[Wish], last_modified: Option<i64>) -> Markup {
                             hr;
                             article {
                                 @if let Some(image) = &wish.image {
-                                    a href=[wish.url.as_deref()] {
+                                    // Same target as the heading link below; one tab stop and announcement is enough.
+                                    a href=[wish.url.as_deref()] tabindex="-1" aria-hidden="true" {
                                         img src={ "images/" (image) } alt=(wish.title) loading="lazy";
                                     }
                                 }
@@ -85,8 +83,8 @@ pub fn public_page(wishes: &[Wish], last_modified: Option<i64>) -> Markup {
                         hr;
                     }
                     footer {
-                        @if let Some(ts) = last_modified {
-                            p.updated { "Sist oppdatert " (norwegian_date(ts, &now)) }
+                        @if let Some(d) = last_modified.and_then(oslo_date) {
+                            p.updated { "Sist oppdatert " time datetime=(d) { (norwegian_day(d, &now)) } }
                         }
                         p { "❤️" }
                     }
@@ -104,6 +102,7 @@ td { padding: .5rem; border-bottom: 1px solid #e5e7eb; vertical-align: middle; }
 tr { scroll-margin-top: 40vh; }
 tr:target { animation: flash 2s ease-out; }
 @keyframes flash { from { background: #fefce8; } }
+@media (prefers-reduced-motion: reduce) { tr:target { animation: none; background: #fefce8; } }
 td.actions { white-space: nowrap; text-align: right; }
 /* max-width: 0 lets a table cell shrink below its content so the ellipsis kicks in. */
 td.title { width: 100%; max-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -193,10 +192,10 @@ pub fn admin_list(wishes: &[Wish], received: bool) -> Markup {
                         @if !received {
                             td.actions {
                                 form.inline method="post" action={ "/ønske/" (wish.id) "/move/up" } {
-                                    button title="Flytt opp" disabled[i == 0] { "↑" }
+                                    button title="Flytt opp" aria-label={ "Flytt «" (wish.title) "» opp" } disabled[i == 0] { "↑" }
                                 }
                                 form.inline method="post" action={ "/ønske/" (wish.id) "/move/down" } {
-                                    button title="Flytt ned" disabled[i + 1 == wishes.len()] { "↓" }
+                                    button title="Flytt ned" aria-label={ "Flytt «" (wish.title) "» ned" } disabled[i + 1 == wishes.len()] { "↓" }
                                 }
                             }
                         }
@@ -248,7 +247,7 @@ pub fn admin_form(wish: Option<&Wish>, place: Option<(usize, usize)>) -> Markup 
                     div.image-field {
                         @if let Some(w) = wish {
                             @if let Some(image) = &w.image {
-                                img.preview src={ "/site/images/" (image) } alt="";
+                                img.preview src={ "/site/images/" (image) } alt="Nåværende bilde";
                             }
                         }
                         input type="file" name="image" accept="image/jpeg,image/png,image/webp" required[!wish.is_some_and(|w| w.image.is_some())];
@@ -290,14 +289,9 @@ mod tests {
         let last_year = "2025-12-24T23:30:00+01:00[Europe/Oslo]"
             .parse::<Zoned>()
             .unwrap();
-        assert_eq!(
-            norwegian_date(this_year.timestamp().as_second(), &now),
-            "1. mars"
-        );
-        assert_eq!(
-            norwegian_date(last_year.timestamp().as_second(), &now),
-            "24. desember 2025"
-        );
+        let day = |z: Zoned| norwegian_day(oslo_date(z.timestamp().as_second()).unwrap(), &now);
+        assert_eq!(day(this_year), "1. mars");
+        assert_eq!(day(last_year), "24. desember 2025");
     }
 
     #[test]
