@@ -24,7 +24,7 @@ const SCHEMA: &str = "
 CREATE TABLE IF NOT EXISTS wish(
   id INTEGER PRIMARY KEY, position INTEGER NOT NULL,
   title TEXT NOT NULL, url TEXT, subtitle TEXT, description TEXT,
-  image TEXT, received INTEGER NOT NULL DEFAULT 0);
+  image TEXT, received INTEGER NOT NULL DEFAULT 0, received_at TEXT, giver TEXT);
 CREATE TABLE IF NOT EXISTS site(id INTEGER PRIMARY KEY CHECK(id = 1), last_modified INTEGER);
 ";
 const MAX_IMAGE_WIDTH: u32 = 720;
@@ -54,6 +54,8 @@ pub struct Wish {
     pub description: Option<String>,
     pub image: Option<String>,
     pub received: bool,
+    pub received_at: Option<String>,
+    pub giver: Option<String>,
 }
 
 #[derive(Default)]
@@ -64,6 +66,8 @@ struct WishForm {
     description: Option<String>,
     image: Option<Vec<u8>>,
     received: bool,
+    received_at: Option<String>,
+    giver: Option<String>,
     position: Option<usize>,
 }
 
@@ -161,8 +165,18 @@ async fn update(State(app): State<App>, Path(id): Path<i64>, multipart: Multipar
         return Err(bad("Bilde mangler"));
     }
     db.execute(
-        "UPDATE wish SET title = ?1, url = ?2, subtitle = ?3, description = ?4, received = ?5 WHERE id = ?6",
-        params![form.title, form.url, form.subtitle, form.description, form.received, id],
+        "UPDATE wish SET title = ?1, url = ?2, subtitle = ?3, description = ?4, received = ?5,
+         received_at = ?6, giver = ?7 WHERE id = ?8",
+        params![
+            form.title,
+            form.url,
+            form.subtitle,
+            form.description,
+            form.received,
+            form.received_at.filter(|_| form.received),
+            form.giver.filter(|_| form.received),
+            id
+        ],
     )
     .map_err(internal)?;
     if let Some(rank) = form.position.filter(|_| !form.received) {
@@ -222,6 +236,16 @@ async fn read_form(mut multipart: Multipart) -> Result<WishForm, HttpErr> {
             "subtitle" => form.subtitle = value,
             "description" => form.description = value,
             "received" => form.received = true,
+            "received_at" => {
+                form.received_at = value
+                    .map(|v| {
+                        v.parse::<jiff::civil::Date>()
+                            .map(|d| d.to_string())
+                            .map_err(|_| bad("Ugyldig dato"))
+                    })
+                    .transpose()?
+            }
+            "giver" => form.giver = value,
             "position" => {
                 form.position = value
                     .map(|v| v.parse().map_err(|_| bad("Ugyldig plassering")))
@@ -343,7 +367,7 @@ fn place(db: &mut Connection, id: i64, rank: usize) -> rusqlite::Result<()> {
 
 fn find(db: &Connection, id: i64) -> Result<Wish, HttpErr> {
     db.query_row(
-        "SELECT id, title, url, subtitle, description, image, received FROM wish WHERE id = ?1",
+        "SELECT id, title, url, subtitle, description, image, received, received_at, giver FROM wish WHERE id = ?1",
         [id],
         to_wish,
     )
@@ -354,7 +378,7 @@ fn find(db: &Connection, id: i64) -> Result<Wish, HttpErr> {
 
 fn load(db: &Connection, received: bool) -> rusqlite::Result<Vec<Wish>> {
     let mut stmt = db.prepare(
-        "SELECT id, title, url, subtitle, description, image, received FROM wish
+        "SELECT id, title, url, subtitle, description, image, received, received_at, giver FROM wish
          WHERE received = ?1 ORDER BY position",
     )?;
     stmt.query_map([received], to_wish)?.collect()
@@ -369,16 +393,28 @@ fn to_wish(r: &Row) -> rusqlite::Result<Wish> {
         description: r.get(4)?,
         image: r.get(5)?,
         received: r.get(6)?,
+        received_at: r.get(7)?,
+        giver: r.get(8)?,
     })
 }
 
 fn migrate(db: &Connection) -> rusqlite::Result<()> {
-    let has_note: bool = db.query_row(
-        "SELECT EXISTS(SELECT 1 FROM pragma_table_info('wish') WHERE name = 'note')",
-        [],
-        |r| r.get(0),
-    )?;
-    if has_note {
+    let has = |column: &str| -> rusqlite::Result<bool> {
+        db.query_row(
+            "SELECT EXISTS(SELECT 1 FROM pragma_table_info('wish') WHERE name = ?1)",
+            [column],
+            |r| r.get(0),
+        )
+    };
+    if !has("received_at")? {
+        db.execute_batch(
+            "BEGIN;
+             ALTER TABLE wish ADD COLUMN received_at TEXT;
+             ALTER TABLE wish ADD COLUMN giver TEXT;
+             COMMIT;",
+        )?;
+    }
+    if has("note")? {
         db.execute_batch(
             "BEGIN;
              ALTER TABLE wish RENAME COLUMN description TO subtitle;
@@ -463,6 +499,28 @@ mod tests {
         assert!(tredje < andre, "moved-up wish should come first");
         assert!(!html.contains("<script"));
         assert!(html.contains("Sist oppdatert"));
+    }
+
+    #[test]
+    fn migrate_adds_received_columns() {
+        let db = Connection::open_in_memory().unwrap();
+        db.execute_batch(
+            "CREATE TABLE wish(id INTEGER PRIMARY KEY, position INTEGER NOT NULL,
+             title TEXT NOT NULL, url TEXT, subtitle TEXT, description TEXT,
+             image TEXT, received INTEGER NOT NULL DEFAULT 0);",
+        )
+        .unwrap();
+        migrate(&db).unwrap();
+        migrate(&db).unwrap();
+        db.execute(
+            "INSERT INTO wish(position, title, received, received_at, giver)
+             VALUES (1, 'A', 1, '2026-12-24', 'Mor')",
+            [],
+        )
+        .unwrap();
+        let wish = &load(&db, true).unwrap()[0];
+        assert_eq!(wish.received_at.as_deref(), Some("2026-12-24"));
+        assert_eq!(wish.giver.as_deref(), Some("Mor"));
     }
 
     #[test]

@@ -1,5 +1,5 @@
 use crate::Wish;
-use jiff::{Timestamp, Zoned, tz::TimeZone};
+use jiff::{Timestamp, Zoned, civil::Date, tz::TimeZone};
 use maud::{DOCTYPE, Markup, html};
 
 const MONTHS: [&str; 12] = [
@@ -30,7 +30,10 @@ fn norwegian_date(ts: i64, now: &Zoned) -> String {
     let Ok(ts) = Timestamp::from_second(ts) else {
         return String::new();
     };
-    let d = ts.to_zoned(oslo());
+    norwegian_day(ts.to_zoned(oslo()).date(), now)
+}
+
+fn norwegian_day(d: Date, now: &Zoned) -> String {
     let month = MONTHS[d.month() as usize - 1];
     if d.year() == now.year() {
         format!("{}. {month}", d.day())
@@ -107,10 +110,13 @@ td.title { width: 100%; max-width: 0; overflow: hidden; text-overflow: ellipsis;
 form.inline { display: inline; }
 td.actions button { min-width: 2.75rem; min-height: 2.75rem; font-size: 1.25rem; }
 td.actions form + form { margin-left: .5rem; }
+.meta { display: block; overflow: hidden; text-overflow: ellipsis; font-size: .875rem; color: #6b7280; }
 img.thumb { width: 3rem; height: 3rem; object-fit: cover; border-radius: .25rem; }
 label { display: block; margin-top: 1rem; font-weight: 600; }
-input[type=text], input[type=url], input[type=number], textarea { width: 100%; box-sizing: border-box; padding: .4rem; font: inherit; font-weight: normal; display: block; margin-top: .4rem; }
+input[type=text], input[type=url], input[type=number], input[type=date], textarea { width: 100%; box-sizing: border-box; padding: .4rem; font: inherit; font-weight: normal; display: block; margin-top: .4rem; }
 input[type=number] { width: 6rem; }
+input[type=date] { width: auto; }
+form:has(input[name=received]:not(:checked)) .received-fields { display: none; }
 .image-field { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 1rem; margin-top: .4rem; font-weight: normal; }
 /* Same size as the public page's article img. */
 img.preview { width: 13rem; max-height: 20rem; object-fit: cover; border-radius: .375rem; border: 2px solid #e5e7eb; }
@@ -160,6 +166,7 @@ fn admin_layout(title: &str, body: Markup) -> Markup {
 }
 
 pub fn admin_list(wishes: &[Wish], received: bool) -> Markup {
+    let now = now_in_oslo();
     let title = if received { "Mottatt" } else { "Ønsker" };
     admin_layout(
         title,
@@ -179,7 +186,10 @@ pub fn admin_list(wishes: &[Wish], received: bool) -> Markup {
                                 img.thumb src={ "/site/images/" (image) } alt="";
                             }
                         }
-                        td.title title=(wish.title) { a href={ "/ønske/" (wish.id) } { (wish.title) } }
+                        td.title title=(wish.title) {
+                            a href={ "/ønske/" (wish.id) } { (wish.title) }
+                            (received_meta(wish, &now))
+                        }
                         @if !received {
                             td.actions {
                                 form.inline method="post" action={ "/ønske/" (wish.id) "/move/up" } {
@@ -196,6 +206,20 @@ pub fn admin_list(wishes: &[Wish], received: bool) -> Markup {
             @if wishes.is_empty() { p { @if received { "Ingenting mottatt ennå." } @else { "Ingen ønsker ennå." } } }
         },
     )
+}
+
+/// "24. desember · fra Mor", leaving out whichever part is missing.
+fn received_meta(wish: &Wish, now: &Zoned) -> Markup {
+    let date: Option<Date> = wish.received_at.as_deref().and_then(|d| d.parse().ok());
+    html! {
+        @if date.is_some() || wish.giver.is_some() {
+            span.meta {
+                @if let Some(d) = date { time datetime=(d) { (norwegian_day(d, now)) } }
+                @if date.is_some() && wish.giver.is_some() { " · " }
+                @if let Some(giver) = &wish.giver { "fra " (giver) }
+            }
+        }
+    }
 }
 
 /// `place` is (1-based rank, highest allowed rank) among open wishes; `None` hides the field.
@@ -235,6 +259,10 @@ pub fn admin_form(wish: Option<&Wish>, place: Option<(usize, usize)>) -> Markup 
                 }
                 @if let Some(w) = wish {
                     label { input type="checkbox" name="received" checked[w.received]; " Mottatt (skjules fra offentlig side)" }
+                    div.received-fields {
+                        label { "Mottatt dato" input type="date" name="received_at" value=(w.received_at.clone().unwrap_or_else(|| now_in_oslo().date().to_string())); }
+                        label { "Gitt av" input type="text" name="giver" value=(value(|w| w.giver.as_deref())); }
+                    }
                 }
                 div.row { button type="submit" { "Lagre" } }
             }
@@ -270,5 +298,32 @@ mod tests {
             norwegian_date(last_year.timestamp().as_second(), &now),
             "24. desember 2025"
         );
+    }
+
+    #[test]
+    fn formats_received_meta() {
+        let now = "2026-11-08T12:00:00+01:00[Europe/Oslo]"
+            .parse::<Zoned>()
+            .unwrap();
+        let wish = |received_at: Option<&str>, giver: Option<&str>| Wish {
+            id: 1,
+            title: "A".into(),
+            url: None,
+            subtitle: None,
+            description: None,
+            image: None,
+            received: true,
+            received_at: received_at.map(Into::into),
+            giver: giver.map(Into::into),
+        };
+        assert_eq!(
+            received_meta(&wish(Some("2026-12-24"), Some("Mor")), &now).into_string(),
+            r#"<span class="meta"><time datetime="2026-12-24">24. desember</time> · fra Mor</span>"#
+        );
+        assert_eq!(
+            received_meta(&wish(None, Some("Mor")), &now).into_string(),
+            r#"<span class="meta">fra Mor</span>"#
+        );
+        assert_eq!(received_meta(&wish(None, None), &now).into_string(), "");
     }
 }
