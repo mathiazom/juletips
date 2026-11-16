@@ -12,3 +12,8 @@ maud = { version = "0.27.0", features = ["axum"] }
 rusqlite = { version = "0.41.1", features = ["bundled"] }
 tokio = { version = "1.54.1", features = ["rt-multi-thread", "macros", "net"] }
 tower-http = { version = "0.7.1", features = ["fs"] }
+
+[profile.release]
+strip = true
+lto = true
+codegen-units = 1
