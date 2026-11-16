@@ -1,0 +1,23 @@
+name: Sanity check
+
+on:
+  push:
+    branches: [ 'main' ]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Test
+        working-directory: app
+        run: cargo test --locked
+
+      - name: Build Docker image
+        if: github.event_name == 'pull_request'
+        run: docker build app
