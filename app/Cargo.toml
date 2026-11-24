@@ -7,7 +7,7 @@ publish = false
 [dependencies]
 axum = { version = "0.8.9", features = ["multipart"] }
 image = { version = "0.25.10", default-features = false, features = ["jpeg", "png", "webp"] }
-jiff = { version = "0.2.40", features = ["tzdb-bundle-always"] }
+jiff = { version = "1.0.2", features = ["tzdb-bundle-always"] }
 maud = { version = "0.27.0", features = ["axum"] }
 rusqlite = { version = "0.43.0", features = ["bundled"] }
 tokio = { version = "1.54.1", features = ["rt-multi-thread", "macros", "net"] }
