@@ -1,5 +1,5 @@
 use crate::Wish;
-use jiff::{Timestamp, Zoned, civil::Date, tz::TimeZone};
+use jiff::{Timestamp, ZonedDateTime, civil::Date, tz::TimeZone};
 use maud::{DOCTYPE, Markup, html};
 
 const MONTHS: [&str; 12] = [
@@ -17,8 +17,8 @@ const MONTHS: [&str; 12] = [
     "desember",
 ];
 
-fn now_in_oslo() -> Zoned {
-    Timestamp::now().to_zoned(oslo())
+fn now_in_oslo() -> ZonedDateTime {
+    Timestamp::now().to_zoned_datetime(oslo())
 }
 
 fn oslo() -> TimeZone {
@@ -26,11 +26,16 @@ fn oslo() -> TimeZone {
 }
 
 fn oslo_date(ts: i64) -> Option<Date> {
-    Some(Timestamp::from_second(ts).ok()?.to_zoned(oslo()).date())
+    Some(
+        Timestamp::from_second(ts)
+            .ok()?
+            .to_zoned_datetime(oslo())
+            .date(),
+    )
 }
 
 /// "8. november", with the year only when it isn't the current one.
-fn norwegian_day(d: Date, now: &Zoned) -> String {
+fn norwegian_day(d: Date, now: &ZonedDateTime) -> String {
     let month = MONTHS[d.month() as usize - 1];
     if d.year() == now.year() {
         format!("{}. {month}", d.day())
@@ -208,7 +213,7 @@ pub fn admin_list(wishes: &[Wish], received: bool) -> Markup {
 }
 
 /// "24. desember · fra Mor", leaving out whichever part is missing.
-fn received_meta(wish: &Wish, now: &Zoned) -> Markup {
+fn received_meta(wish: &Wish, now: &ZonedDateTime) -> Markup {
     let date: Option<Date> = wish.received_at.as_deref().and_then(|d| d.parse().ok());
     html! {
         @if date.is_some() || wish.giver.is_some() {
@@ -281,15 +286,16 @@ mod tests {
     #[test]
     fn formats_norwegian_dates() {
         let now = "2026-11-08T12:00:00+01:00[Europe/Oslo]"
-            .parse::<Zoned>()
+            .parse::<ZonedDateTime>()
             .unwrap();
         let this_year = "2026-03-01T00:30:00+01:00[Europe/Oslo]"
-            .parse::<Zoned>()
+            .parse::<ZonedDateTime>()
             .unwrap();
         let last_year = "2025-12-24T23:30:00+01:00[Europe/Oslo]"
-            .parse::<Zoned>()
+            .parse::<ZonedDateTime>()
             .unwrap();
-        let day = |z: Zoned| norwegian_day(oslo_date(z.timestamp().as_second()).unwrap(), &now);
+        let day =
+            |z: ZonedDateTime| norwegian_day(oslo_date(z.timestamp().as_second()).unwrap(), &now);
         assert_eq!(day(this_year), "1. mars");
         assert_eq!(day(last_year), "24. desember 2025");
     }
@@ -297,7 +303,7 @@ mod tests {
     #[test]
     fn formats_received_meta() {
         let now = "2026-11-08T12:00:00+01:00[Europe/Oslo]"
-            .parse::<Zoned>()
+            .parse::<ZonedDateTime>()
             .unwrap();
         let wish = |received_at: Option<&str>, giver: Option<&str>| Wish {
             id: 1,
